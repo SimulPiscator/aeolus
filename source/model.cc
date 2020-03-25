@@ -917,7 +917,7 @@ int Model::read_instr (void)
 		    stat = ERROR;
 		}
 		else if (strlen (t1) > 15) stat = BAD_STR1;
-		else if ((k < 0) || (k > _nkeybd)) stat = BAD_KEYBD;
+		else if ((k < 1) || (k > _nkeybd)) stat = BAD_KEYBD;
 		else if ((s < 1) || (s > NASECT))  stat = BAD_ASECT;
 		else
 		{
