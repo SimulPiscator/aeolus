@@ -28,7 +28,11 @@
 #include <clthreads.h>
 #include <dlfcn.h>
 #include "audio.h"
-#include "imidi.h"
+#if __linux__
+# include "imidi_alsa.h"
+#elif __APPLE__
+# include "imidi_coremidi.h"
+#endif
 #include "model.h"
 #include "slave.h"
 #include "iface.h"
@@ -218,7 +222,11 @@ int main (int ac, char *av [])
     audio->init_jack (s_val, B_opt, &midi_queue);
 #endif
     model = new Model (&comm_queue, &midi_queue, audio->midimap (), audio->appname (), S_val, I_val, W_val, u_opt);
-    imidi = new Imidi (&note_queue, &midi_queue, audio->midimap (), audio->appname ());
+#if __linux__
+    imidi = new Imidi_alsa (&note_queue, &midi_queue, audio->midimap (), audio->appname ());
+#elif __APPLE__
+    imidi = new Imidi_coremidi (&note_queue, &midi_queue, audio->midimap (), audio->appname ());
+#endif
     slave = new Slave ();
     iface = so_create (ac, av);
 

@@ -71,7 +71,7 @@ target_link_libraries(aeolus_x11
 )
 install(TARGETS aeolus_txt aeolus_x11 DESTINATION ${LIBDIR})
 
-add_executable(aeolus
+set(AEOLUS_SRC
   source/addsynth.cc
   source/addsynth.h
   source/asection.cc
@@ -103,6 +103,19 @@ add_executable(aeolus
   source/scales.h
   source/slave.cc
   source/slave.h
+)
+if(LINUX)
+    list(APPEND AEOLUS_SRC
+        source/imidi_alsa.cc
+    )
+elseif(APPLE)
+    list(APPEND AEOLUS_SRC
+        source/imidi_coremidi.cc
+    )
+endif()
+
+add_executable(aeolus
+  ${AEOLUS_SRC}
 )
 target_link_libraries(aeolus 
     ${JACK_LIBRARY}
