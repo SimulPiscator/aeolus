@@ -27,6 +27,9 @@
 #ifdef __linux__
 #include <zita-alsa-pcmi.h>
 #endif
+#if __APPLE__
+#include <AudioToolbox/AudioToolbox.h>
+#endif
 #include <jack/jack.h>
 #include "asection.h"
 #include "division.h"
@@ -43,6 +46,9 @@ public:
     virtual ~Audio (void);
 #ifdef __linux__
     void  init_alsa (const char *device, int fsamp, int fsize, int nfrag);
+#endif
+#if __APPLE__
+    void  init_coreaudio(int fsamp, int fsize);
 #endif
     void  init_jack (const char *server, bool bform, Lfq_u8 *qmidi);
     void  start (void);
@@ -61,8 +67,15 @@ private:
 #ifdef __linux__
     void close_alsa (void);
 #endif
+#if __APPLE__
+    void close_coreaudio();
+#endif
     void close_jack (void);
+
     virtual void thr_main (void);
+#if __APPLE__
+    void coreaudio_callback(int nframes, AudioBufferList*);
+#endif
     void jack_shutdown (void);
     int  jack_callback (jack_nframes_t);
     void proc_jmidi (int);
@@ -112,9 +125,15 @@ private:
 	}
     }
 
+#if __APPLE__
+    static OSStatus coreaudio_static_callback(void *,
+                      AudioUnitRenderActionFlags *,
+                      const AudioTimeStamp *,
+                      UInt32, UInt32, AudioBufferList *);
+#endif
     static void jack_static_shutdown (void *);
     static int  jack_static_callback (jack_nframes_t, void *);
-
+    
     const char     *_appname;
     uint16_t        _midimap [16];
     Lfq_u32        *_qnote; 
@@ -123,6 +142,9 @@ private:
     volatile bool   _running;
 #ifdef __linux__
     Alsa_pcmi      *_alsa_handle;
+#endif
+#if __APPLE__
+    AudioUnit       _coreaudio_handle;
 #endif
     jack_client_t  *_jack_handle;
     jack_port_t    *_jack_opport [8];

@@ -35,6 +35,9 @@ Audio::Audio (const char *name, Lfq_u32 *qnote, Lfq_u32 *qcomm) :
 #ifdef __linux__
     _alsa_handle (0),
 #endif
+#if __APPLE__
+    _coreaudio_handle(0),
+#endif
     _jack_handle (0),
     _abspri (0),
     _relpri (0),
@@ -55,6 +58,9 @@ Audio::~Audio (void)
 #ifdef __linux__
     if (_alsa_handle) close_alsa ();
 #endif
+#if __APPLE__
+    if (_coreaudio_handle) close_coreaudio();
+#endif
     if (_jack_handle) close_jack ();
     for (i = 0; i < _nasect; i++) delete _asectp [i];
     for (i = 0; i < _ndivis; i++) delete _divisp [i];
@@ -67,7 +73,7 @@ void Audio::init_audio (void)
     int i;
 
     _jmidi_pdata = 0;
-    _audiopar [VOLUME]._val = 0.32f;  
+    _audiopar [VOLUME]._val = 0.32f;
     _audiopar [VOLUME]._min = 0.00f;
     _audiopar [VOLUME]._max = 1.00f;
     _audiopar [REVSIZE]._val = _revsize = 0.075f;
@@ -180,6 +186,116 @@ void Audio::thr_main (void)
 #endif
 }
 
+#if __APPLE__
+void Audio::init_coreaudio(int fsamp, int fsize)
+{
+    AudioComponentDescription outputcd = {0};
+    outputcd.componentType = kAudioUnitType_Output;
+    outputcd.componentSubType = kAudioUnitSubType_DefaultOutput;
+    outputcd.componentManufacturer = kAudioUnitManufacturer_Apple;
+    
+    AudioComponent comp = ::AudioComponentFindNext(NULL, &outputcd);
+    if (comp == NULL) {
+        fprintf (stderr, "CoreAudio: can't get output unit\n");
+        exit(1);
+    }
+    OSStatus err = ::AudioComponentInstanceNew(comp, &_coreaudio_handle);
+    if(err) {
+        fprintf(stderr, "CoreAudio: couldn't open component for output unit\n");
+        exit(1);
+    }
+    
+    Float64 sampleRate = fsamp;
+    AudioUnitSetProperty(_coreaudio_handle,
+                         kAudioUnitProperty_SampleRate,
+                         kAudioUnitScope_Input,
+                         0,
+                         &sampleRate,
+                         sizeof(sampleRate));
+    if(err) {
+        fprintf(stderr, "CoreAudio: couldn't set sample rate to %d\n", fsamp);
+        exit(1);
+    }
+
+    UInt32 frameSize = fsize;
+    err = AudioUnitSetProperty(_coreaudio_handle,
+                         kAudioDevicePropertyBufferFrameSize,
+                         kAudioUnitScope_Input,
+                         0,
+                         &frameSize,
+                         sizeof(frameSize));
+    if(err) {
+        fprintf(stderr, "CoreAudio: couldn't set frame size to %d\n", fsize);
+        exit(1);
+    }
+
+    _fsamp = fsamp;
+    _fsize = fsize;
+    _nplay = 2;
+    init_audio ();
+
+    AURenderCallbackStruct input;
+    input.inputProc = &coreaudio_static_callback;
+    input.inputProcRefCon = this;
+    err = AudioUnitSetProperty(_coreaudio_handle,
+                                kAudioUnitProperty_SetRenderCallback,
+                                kAudioUnitScope_Input,
+                                0,
+                                &input,
+                                sizeof(input));
+    if(err) {
+        fprintf(stderr, "CoreAudio: couldn't set callback function\n");
+        exit(1);
+    }
+        
+    err = AudioUnitInitialize(_coreaudio_handle);
+    if(err) {
+        fprintf(stderr, "CoreAudio: couldn't initialize output unit\n");
+        exit(1);
+    }
+    
+    err = AudioOutputUnitStart(_coreaudio_handle);
+    if(err) {
+        fprintf(stderr, "CoreAudio: couldn't start output unit\n");
+        exit(1);
+    }
+}
+#endif
+
+#if __APPLE__
+void Audio::close_coreaudio()
+{
+    AudioOutputUnitStop(_coreaudio_handle);
+    AudioUnitUninitialize(_coreaudio_handle);
+    AudioComponentInstanceDispose(_coreaudio_handle);
+    _coreaudio_handle = NULL;
+}
+#endif
+
+#if __APPLE__
+OSStatus Audio::coreaudio_static_callback(void *refCon,
+          AudioUnitRenderActionFlags *,
+          const AudioTimeStamp *,
+          UInt32,
+          UInt32 inNumberFrames, AudioBufferList *ioData)
+{
+    static_cast<Audio*>(refCon)->coreaudio_callback(inNumberFrames, ioData);
+    return noErr;
+}
+#endif
+
+#if __APPLE__
+void Audio::coreaudio_callback(int nframes, AudioBufferList* bufs)
+{
+    proc_queue (_qnote);
+    proc_queue (_qcomm);
+    proc_keys1 ();
+    proc_keys2 ();
+    for (int i = 0; i < _nplay; i++) _outbuf [i] = static_cast<float*>(bufs->mBuffers[i].mData);
+    proc_synth (nframes);
+    proc_mesg ();
+}
+#endif
 
 void Audio::init_jack (const char *server, bool bform, Lfq_u8 *qmidi)
 {
@@ -442,7 +558,6 @@ void Audio::proc_jmidi (int tmax)
 	_jmidi_index++;
     }
 }
-
 
 void Audio::proc_queue (Lfq_u32 *Q) 
 {

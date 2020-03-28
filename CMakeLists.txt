@@ -72,45 +72,47 @@ target_link_libraries(aeolus_x11
 install(TARGETS aeolus_txt aeolus_x11 DESTINATION ${LIBDIR})
 
 set(AEOLUS_SRC
-  source/addsynth.cc
-  source/addsynth.h
-  source/asection.cc
-  source/asection.h
-  source/audio.cc
-  source/audio.h
-  source/callbacks.h
-  source/division.cc
-  source/division.h
-  source/exp2ap.cc
-  source/global.h
-  source/iface.h
-  source/imidi.cc
-  source/imidi.h
-  source/lfqueue.cc
-  source/lfqueue.h
-  source/main.cc
-  source/messages.h
-  source/model.cc
-  source/model.h
-  source/prbsgen.h
-  source/rankwave.cc
-  source/rankwave.h
-  source/reverb.cc
-  source/reverb.h
-  source/rngen.cc
-  source/rngen.h
-  source/scales.cc
-  source/scales.h
-  source/slave.cc
-  source/slave.h
+    source/addsynth.cc
+    source/addsynth.h
+    source/asection.cc
+    source/asection.h
+    source/audio.cc
+    source/audio.h
+    source/callbacks.h
+    source/division.cc
+    source/division.h
+    source/exp2ap.cc
+    source/global.h
+    source/iface.h
+    source/imidi.cc
+    source/imidi.h
+    source/lfqueue.cc
+    source/lfqueue.h
+    source/main.cc
+    source/messages.h
+    source/model.cc
+    source/model.h
+    source/prbsgen.h
+    source/rankwave.cc
+    source/rankwave.h
+    source/reverb.cc
+    source/reverb.h
+    source/rngen.cc
+    source/rngen.h
+    source/scales.cc
+    source/scales.h
+    source/slave.cc
+    source/slave.h
 )
 if(LINUX)
     list(APPEND AEOLUS_SRC
         source/imidi_alsa.cc
+        source/imidi_alsa.h
     )
 elseif(APPLE)
     list(APPEND AEOLUS_SRC
         source/imidi_coremidi.cc
+        source/imidi_coremidi.h
     )
 endif()
 
@@ -118,14 +120,15 @@ add_executable(aeolus
   ${AEOLUS_SRC}
 )
 target_link_libraries(aeolus 
-    ${JACK_LIBRARY}
     ${CLTHREADS_LIBRARY}
+    ${JACK_LIBRARY}
 )
 if(LINUX)
   target_link_libraries(aeolus asound pthread dl rt)
 elseif(APPLE)
-  find_library(CORE_MIDI CoreMIDI)
   find_library(COCOA Cocoa)
-  target_link_libraries(aeolus ${CORE_MIDI} ${COCOA})
+  find_library(CORE_MIDI CoreMIDI)
+  find_library(AUDIO_TOOLBOX AudioToolbox)
+  target_link_libraries(aeolus ${COCOA} ${CORE_MIDI} ${AUDIO_TOOLBOX})
 endif()
 install(TARGETS aeolus DESTINATION ${BINDIR})
