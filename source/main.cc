@@ -28,9 +28,12 @@
 #include <clthreads.h>
 #include <dlfcn.h>
 #include "audio.h"
+#include "audio_jack.h"
 #if __linux__
+# include "audio_alsa.h"
 # include "imidi_alsa.h"
 #elif __APPLE__
+# include "audio_coreaudio.h"
 # include "imidi_coremidi.h"
 #endif
 #include "model.h"
@@ -223,16 +226,16 @@ int main (int ac, char *av [])
         return 1;
     }
 
-    audio = new Audio (N_val, &note_queue, &comm_queue);
+    audio = NULL;
 #ifdef __linux__
-    if (A_opt) audio->init_alsa (d_val, r_val, p_val, n_val);
-    else       audio->init_jack (s_val, B_opt, &midi_queue);
+    if (A_opt)
+        audio = new Audio_alsa(N_val, &note_queue, &comm_queue, d_val, r_val, p_val, n_val);
 #elif __APPLE__
-    if (C_opt) audio->init_coreaudio (r_val, p_val);
-    else       audio->init_jack (s_val, B_opt, &midi_queue);
-#else
-    audio->init_jack (s_val, B_opt, &midi_queue);
+    if (C_opt)
+        audio = new Audio_coreaudio (N_val, &note_queue, &comm_queue, r_val, p_val);
 #endif
+    if (!audio)
+        audio = new Audio_jack (N_val, &note_queue, &comm_queue, s_val, B_opt, &midi_queue);
     model = new Model (&comm_queue, &midi_queue, audio->midimap (), audio->appname (), S_val, I_val, W_val, u_opt);
 #if __linux__
     imidi = new Imidi_alsa (&note_queue, &midi_queue, audio->midimap (), audio->appname ());

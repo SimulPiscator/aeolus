@@ -21,21 +21,12 @@
 #ifndef __AUDIO_H
 #define __AUDIO_H
 
-
-#include <stdlib.h>
-#include <clthreads.h>
-#ifdef __linux__
-#include <zita-alsa-pcmi.h>
-#endif
-#if __APPLE__
-#include <AudioToolbox/AudioToolbox.h>
-#endif
-#include <jack/jack.h>
 #include "asection.h"
 #include "division.h"
 #include "lfqueue.h"
 #include "reverb.h"
 #include "global.h"
+#include <clthreads.h>
 
 
 class Audio : public A_thread
@@ -44,13 +35,6 @@ public:
 
     Audio (const char *jname, Lfq_u32 *qnote, Lfq_u32 *qcomm);
     virtual ~Audio (void);
-#ifdef __linux__
-    void  init_alsa (const char *device, int fsamp, int fsize, int nfrag);
-#endif
-#if __APPLE__
-    void  init_coreaudio(int fsamp, int fsize);
-#endif
-    void  init_jack (const char *server, bool bform, Lfq_u8 *qmidi);
     void  start (void);
 
     const char  *appname (void) const { return _appname; }
@@ -58,32 +42,20 @@ public:
     int  policy (void) const { return _policy; }
     int  abspri (void) const { return _abspri; }
     int  relpri (void) const { return _relpri; }
-
-private:
-   
-    enum { VOLUME, REVSIZE, REVTIME, STPOSIT };
+    
+protected:
 
     void init_audio (void);
-#ifdef __linux__
-    void close_alsa (void);
-#endif
-#if __APPLE__
-    void close_coreaudio();
-#endif
-    void close_jack (void);
 
-    virtual void thr_main (void);
-#if __APPLE__
-    void coreaudio_callback(int nframes, AudioBufferList*);
-#endif
-    void jack_shutdown (void);
-    int  jack_callback (jack_nframes_t);
-    void proc_jmidi (int);
     void proc_queue (Lfq_u32 *);
     void proc_synth (int);
     void proc_keys1 (void);
     void proc_keys2 (void);
     void proc_mesg (void);
+    
+    virtual void on_synth_period(int) {}
+
+    enum { VOLUME, REVSIZE, REVTIME, STPOSIT };
 
     void key_off (int n, int b)
     {
@@ -125,41 +97,20 @@ private:
 	}
     }
 
-#if __APPLE__
-    static OSStatus coreaudio_static_callback(void *,
-                      AudioUnitRenderActionFlags *,
-                      const AudioTimeStamp *,
-                      UInt32, UInt32, AudioBufferList *);
-#endif
-    static void jack_static_shutdown (void *);
-    static int  jack_static_callback (jack_nframes_t, void *);
-    
     const char     *_appname;
     uint16_t        _midimap [16];
     Lfq_u32        *_qnote; 
     Lfq_u32        *_qcomm; 
-    Lfq_u8         *_qmidi;
     volatile bool   _running;
-#ifdef __linux__
-    Alsa_pcmi      *_alsa_handle;
-#endif
-#if __APPLE__
-    AudioUnit       _coreaudio_handle;
-#endif
-    jack_client_t  *_jack_handle;
-    jack_port_t    *_jack_opport [8];
-    jack_port_t    *_jack_midipt;
+
     int             _policy;
     int             _abspri;
     int             _relpri;
-    int             _jmidi_count;
-    int             _jmidi_index;
-    void           *_jmidi_pdata;
     int             _hold;
-    bool            _bform;
     int             _nplay;
     unsigned int    _fsamp;
     unsigned int    _fsize;
+    bool            _bform;
     int             _nasect;
     int             _ndivis;
     Asection       *_asectp [NASECT];
@@ -170,9 +121,6 @@ private:
     Fparm           _audiopar [4];
     float           _revsize;
     float           _revtime;
-
-    static const char *_ports_stereo [2];
-    static const char *_ports_ambis1 [4];
 };
 
 

@@ -21,6 +21,7 @@
 #ifndef __MESSAGES_H
 #define __MESSAGES_H
 
+#include <clthreads.h>
 #include <string.h>
 #include "rankwave.h"
 #include "asection.h"

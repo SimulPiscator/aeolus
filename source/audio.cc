@@ -19,32 +19,23 @@
 
 
 #include <math.h>
-#include <jack/midiport.h>
 #include "audio.h"
 #include "messages.h"
 
 
 
 Audio::Audio (const char *name, Lfq_u32 *qnote, Lfq_u32 *qcomm) :
-    A_thread ("Audio"), 
+    A_thread("Audio"),
     _appname (name),
     _qnote (qnote),
     _qcomm (qcomm),
-    _qmidi (0),
     _running (false),
-#ifdef __linux__
-    _alsa_handle (0),
-#endif
-#if __APPLE__
-    _coreaudio_handle(0),
-#endif
-    _jack_handle (0),
     _abspri (0),
     _relpri (0),
-    _bform (0),
     _nplay (0),
     _fsamp (0),
     _fsize (0),
+    _bform (0),
     _nasect (0),
     _ndivis (0)
 {
@@ -55,13 +46,6 @@ Audio::~Audio (void)
 {
     int i;
 
-#ifdef __linux__
-    if (_alsa_handle) close_alsa ();
-#endif
-#if __APPLE__
-    if (_coreaudio_handle) close_coreaudio();
-#endif
-    if (_jack_handle) close_jack ();
     for (i = 0; i < _nasect; i++) delete _asectp [i];
     for (i = 0; i < _ndivis; i++) delete _divisp [i];
     _reverb.fini ();
@@ -71,8 +55,7 @@ Audio::~Audio (void)
 void Audio::init_audio (void)
 {
     int i;
-
-    _jmidi_pdata = 0;
+    
     _audiopar [VOLUME]._val = 0.32f;
     _audiopar [VOLUME]._min = 0.00f;
     _audiopar [VOLUME]._max = 1.00f;
@@ -115,451 +98,7 @@ void Audio::start (void)
     send_event (TO_MODEL, M);
 }
 
-
-#ifdef __linux__
-void Audio::init_alsa (const char *device, int fsamp, int fsize, int nfrag)
-{
-    _alsa_handle = new Alsa_pcmi (device, 0, 0, fsamp, fsize, nfrag);
-    if (_alsa_handle->state () < 0)
-    {
-        fprintf (stderr, "Error: can't connect to ALSA.\n");
-        exit (1);
-    } 
-    _nplay = _alsa_handle->nplay ();
-    _fsize = fsize;
-    _fsamp = fsamp;
-    if (_nplay > 2) _nplay = 2;
-    init_audio ();
-    for (int i = 0; i < _nplay; i++) _outbuf [i] = new float [fsize];
-    _running = true;
-    if (thr_start (_policy = SCHED_FIFO, _relpri = -20, 0x00010000))
-    {
-        fprintf (stderr, "Warning: can't run ALSA thread in RT mode.\n");
-        if (thr_start (_policy = SCHED_OTHER, _relpri = 0, 0x00010000))
-        {
-            fprintf (stderr, "Error: can't create ALSA thread.\n");
-            exit (1);
-	}
-    }
-}
-#endif
-
-
-#ifdef __linux__
-void Audio::close_alsa ()
-{
-    _running = false;
-    get_event (1 << EV_EXIT);
-    for (int i = 0; i < _nplay; i++) delete[] _outbuf [i];
-    delete _alsa_handle;
-}
-#endif
-
-
-void Audio::thr_main (void) 
-{
-#ifdef __linux__
-    unsigned long k;
-
-    _alsa_handle->pcm_start ();
-
-    while (_running)
-    {
-	k = _alsa_handle->pcm_wait ();  
-        proc_queue (_qnote);
-        proc_queue (_qcomm);
-        proc_keys1 ();
-        proc_keys2 ();
-        while (k >= _fsize)
-       	{
-            proc_synth (_fsize);
-            _alsa_handle->play_init (_fsize);
-            for (int i = 0; i < _nplay; i++) _alsa_handle->play_chan (i, _outbuf [i], _fsize);
-            _alsa_handle->play_done (_fsize);
-            k -= _fsize;
-	}
-        proc_mesg ();
-    }
-
-    _alsa_handle->pcm_stop ();
-    put_event (EV_EXIT);
-#endif
-}
-
-#if __APPLE__
-void Audio::init_coreaudio(int fsamp, int fsize)
-{
-    AudioComponentDescription outputcd = {0};
-    outputcd.componentType = kAudioUnitType_Output;
-    outputcd.componentSubType = kAudioUnitSubType_DefaultOutput;
-    outputcd.componentManufacturer = kAudioUnitManufacturer_Apple;
-    
-    AudioComponent comp = ::AudioComponentFindNext(NULL, &outputcd);
-    if (comp == NULL) {
-        fprintf (stderr, "CoreAudio: can't get output unit\n");
-        exit(1);
-    }
-    OSStatus err = ::AudioComponentInstanceNew(comp, &_coreaudio_handle);
-    if(err) {
-        fprintf(stderr, "CoreAudio: couldn't open component for output unit\n");
-        exit(1);
-    }
-    
-    Float64 sampleRate = fsamp;
-    AudioUnitSetProperty(_coreaudio_handle,
-                         kAudioUnitProperty_SampleRate,
-                         kAudioUnitScope_Input,
-                         0,
-                         &sampleRate,
-                         sizeof(sampleRate));
-    if(err) {
-        fprintf(stderr, "CoreAudio: couldn't set sample rate to %d\n", fsamp);
-        exit(1);
-    }
-
-    UInt32 frameSize = fsize;
-    err = AudioUnitSetProperty(_coreaudio_handle,
-                         kAudioDevicePropertyBufferFrameSize,
-                         kAudioUnitScope_Input,
-                         0,
-                         &frameSize,
-                         sizeof(frameSize));
-    if(err) {
-        fprintf(stderr, "CoreAudio: couldn't set frame size to %d\n", fsize);
-        exit(1);
-    }
-
-    _fsamp = fsamp;
-    _fsize = fsize;
-    _nplay = 2;
-    init_audio ();
-
-    AURenderCallbackStruct input;
-    input.inputProc = &coreaudio_static_callback;
-    input.inputProcRefCon = this;
-    err = AudioUnitSetProperty(_coreaudio_handle,
-                                kAudioUnitProperty_SetRenderCallback,
-                                kAudioUnitScope_Input,
-                                0,
-                                &input,
-                                sizeof(input));
-    if(err) {
-        fprintf(stderr, "CoreAudio: couldn't set callback function\n");
-        exit(1);
-    }
-        
-    err = AudioUnitInitialize(_coreaudio_handle);
-    if(err) {
-        fprintf(stderr, "CoreAudio: couldn't initialize output unit\n");
-        exit(1);
-    }
-    
-    err = AudioOutputUnitStart(_coreaudio_handle);
-    if(err) {
-        fprintf(stderr, "CoreAudio: couldn't start output unit\n");
-        exit(1);
-    }
-}
-#endif
-
-#if __APPLE__
-void Audio::close_coreaudio()
-{
-    AudioOutputUnitStop(_coreaudio_handle);
-    AudioUnitUninitialize(_coreaudio_handle);
-    AudioComponentInstanceDispose(_coreaudio_handle);
-    _coreaudio_handle = NULL;
-}
-#endif
-
-#if __APPLE__
-OSStatus Audio::coreaudio_static_callback(void *refCon,
-          AudioUnitRenderActionFlags *,
-          const AudioTimeStamp *,
-          UInt32,
-          UInt32 inNumberFrames, AudioBufferList *ioData)
-{
-    static_cast<Audio*>(refCon)->coreaudio_callback(inNumberFrames, ioData);
-    return noErr;
-}
-#endif
-
-#if __APPLE__
-void Audio::coreaudio_callback(int nframes, AudioBufferList* bufs)
-{
-    proc_queue (_qnote);
-    proc_queue (_qcomm);
-    proc_keys1 ();
-    proc_keys2 ();
-    for (int i = 0; i < _nplay; i++) _outbuf [i] = static_cast<float*>(bufs->mBuffers[i].mData);
-    proc_synth (nframes);
-    proc_mesg ();
-}
-#endif
-
-void Audio::init_jack (const char *server, bool bform, Lfq_u8 *qmidi)
-{
-    int                 i;
-    int                 opts;
-    jack_status_t       stat;
-    struct sched_param  spar;
-    const char          **p;
-    
-    _bform = bform;
-    _qmidi = qmidi;
-
-    opts = JackNoStartServer;
-    if (server) opts |= JackServerName;
-    _jack_handle = jack_client_open (_appname, (jack_options_t) opts, &stat, server);
-    if (!_jack_handle)
-    {
-        fprintf (stderr, "Error: can't connect to JACK\n");
-        exit (1);
-    }
-    _appname = jack_get_client_name (_jack_handle);
-
-    jack_set_process_callback (_jack_handle, jack_static_callback, (void *)this);
-    jack_on_shutdown (_jack_handle, jack_static_shutdown, (void *)this);
-
-    if (_bform)
-    {
-	_nplay = 4;
-	p = _ports_ambis1;
-    }
-    else
-    {
-	_nplay = 2;
-	p = _ports_stereo;
-    }
-
-    for (i = 0; i < _nplay; i++)
-    {
-        _jack_opport [i] = jack_port_register (_jack_handle, p [i], JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-	if (!_jack_opport [i])
-	{
-	    fprintf (stderr, "Error: can't create the '%s' jack port\n", p [i]);
-	    exit (1);
-	}
-    }
-
-    if (_qmidi)
-    {
-        _jack_midipt = jack_port_register (_jack_handle, "Midi/in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
-        if (!_jack_midipt)
-        {
-	    fprintf (stderr, "Error: can't create the 'Midi/in' jack port\n");
-	    exit (1);
-	}
-    }
-	
-    _fsamp = jack_get_sample_rate (_jack_handle);
-    _fsize = jack_get_buffer_size (_jack_handle);
-    init_audio ();
-
-    if (jack_activate (_jack_handle))
-    {
-        fprintf(stderr, "Error: can't activate JACK.");
-        exit (1);
-    }
-
-    pthread_getschedparam (jack_client_thread_id (_jack_handle), &_policy, &spar);
-    _abspri = spar.sched_priority;
-    _relpri = spar.sched_priority -  sched_get_priority_max (_policy);
-}
-
-
-void Audio::close_jack ()
-{
-    jack_deactivate (_jack_handle);
-    for (int i = 0; i < _nplay; i++) jack_port_unregister(_jack_handle, _jack_opport [i]);
-    jack_client_close (_jack_handle);
-}
-
-
-void Audio::jack_static_shutdown (void *arg)
-{
-    return ((Audio *) arg)->jack_shutdown ();
-}
-
-
-void Audio::jack_shutdown (void)
-{
-    _running = false;
-    send_event (EV_EXIT, 1);
-}
-
-
-int Audio::jack_static_callback (jack_nframes_t nframes, void *arg)
-{
-    return ((Audio *) arg)->jack_callback (nframes);
-}
-
-
-int Audio::jack_callback (jack_nframes_t nframes)
-{
-    int i;
-
-    proc_queue (_qnote);
-    proc_queue (_qcomm);
-    proc_keys1 ();
-    proc_keys2 ();
-    for (i = 0; i < _nplay; i++) _outbuf [i] = (float *)(jack_port_get_buffer (_jack_opport [i], nframes));
-    _jmidi_pdata = jack_port_get_buffer (_jack_midipt, nframes);
-    _jmidi_count = jack_midi_get_event_count (_jmidi_pdata);
-    _jmidi_index = 0;
-    proc_synth (nframes);
-    proc_mesg ();
-    return 0;
-}
-
-
-void Audio::proc_jmidi (int tmax) 
-{
-    int                 c, f, m, n, t, v;
-    jack_midi_event_t   E;
-
-    // Read and process MIDI commands from the JACK port.
-    // Events related to keyboard state are dealt with
-    // locally. All the rest is sent as raw MIDI to the
-    // model thread via qmidi.
-
-    while (   (jack_midi_event_get (&E, _jmidi_pdata, _jmidi_index) == 0)
-           && (E.time < (jack_nframes_t) tmax))
-    {
-	t = E.buffer [0];
-        n = E.buffer [1];
-	v = E.buffer [2];
-	c = t & 0x0F;
-        m = _midimap [c] & 127;        // Keyboard and hold bits
-//        d = (_midimap [c] >>  8) & 7;  // Division number if (f & 2)
-        f = (_midimap [c] >> 12) & 7;  // Control enabled if (f & 4)
-
-	switch (t & 0xF0)
-	{
-	case 0x80:
-	case 0x90:
-	    // Note on or off.
-	    if (v && (t & 0x10))
-	    {
-		// Note on.
-		if (n < 36)
-		{
-		    if ((f & 4) && (n >= 24) && (n < 34))
-		    {
-			// Preset selection, sent to model thread
-			// if on control-enabled channel.
-			if (_qmidi->write_avail () >= 3)
-			{
-			    _qmidi->write (0, t);
-			    _qmidi->write (1, n);
-			    _qmidi->write (2, v);
-			    _qmidi->write_commit (3);
-			}
-		    }
-		}
-		else if (n <= 96)
-		{
-		    if (m) key_on (n - 36, m & _hold);
-		}
-	    }
-	    else
-	    {
-		// Note off.
-		if (n < 36)
-		{
-		}
-		else if (n <= 96)
-		{
-		    if (m) key_off (n - 36, m & KEYS_MASK);
-		}
-	    }
-	    break;
-
-	case 0xB0: // Controller
-	    switch (n)
-	    {
-	    case MIDICTL_HOLD:
-		// Hold pedal.
-                if (m & HOLD_MASK)
-		{
-                    if (v > 63)
-                    {
-		        _hold = KEYS_MASK | HOLD_MASK;
-			cond_key_on (m, HOLD_MASK);
-		    }
-                    else
-		    {
-		        _hold = KEYS_MASK;
-			cond_key_off (HOLD_MASK, HOLD_MASK);
-		    }                    
-		}                    
-		break;
-
-	    case MIDICTL_ASOFF:
-		// All sound off, accepted on control channels only.
-		// Clears all keyboards, including held notes.
-		if (f & 4) cond_key_off (ALL_MASK, ALL_MASK);
-		break;
-
-	    case MIDICTL_ANOFF:
-		// All notes off, accepted on channels controlling
-		// a keyboard. Does not clear held notes. 
-		if (m) cond_key_off (m, m);
-		break;
-	
-	    case MIDICTL_BANK:	
-	    case MIDICTL_IFELM:	
-                // Program bank selection or stop control, sent
-                // to model thread if on control-enabled channel.
-		if (f & 4)
-		{
-		    if (_qmidi->write_avail () >= 3)
-		    {
-			_qmidi->write (0, t);
-			_qmidi->write (1, n);
-			_qmidi->write (2, v);
-			_qmidi->write_commit (3);
-		    }
-		}
-	    case MIDICTL_SWELL:
-	    case MIDICTL_TFREQ:
-	    case MIDICTL_TMODD:
-		// Per-division performance controls, sent to model
-                // thread if on a channel that controls a division.
-		if (f & 2)
-		{
-		    if (_qmidi->write_avail () >= 3)
-		    {
-			_qmidi->write (0, t);
-			_qmidi->write (1, n);
-			_qmidi->write (2, v);
-			_qmidi->write_commit (3);
-		    }
-		}
-		break;
-	    }
-	    break;
-
-	case 0xC0:
-            // Program change sent to model thread
-            // if on control-enabled channel.
-            if (f & 4)
-   	    {
-	        if (_qmidi->write_avail () >= 3)
-	        {
-		    _qmidi->write (0, t);
-		    _qmidi->write (1, n);
-		    _qmidi->write (2, 0);
-		    _qmidi->write_commit (3);
-		}
-	    }
-	    break;
-	}	
-	_jmidi_index++;
-    }
-}
-
-void Audio::proc_queue (Lfq_u32 *Q) 
+void Audio::proc_queue (Lfq_u32 *Q)
 {
     uint32_t  k;
     int       b, c, i, j, n;
@@ -718,11 +257,7 @@ void Audio::proc_synth (int nframes)
     for (j = 0; j < _nplay; j++) out [j] = _outbuf [j];
     for (k = 0; k < nframes; k += PERIOD)
     {
-	if (_jmidi_pdata)
-	{
-	    proc_jmidi (k + PERIOD);
-	    proc_keys1 ();
-	}
+        on_synth_period(k);
 
         memset (W, 0, PERIOD * sizeof (float));
         memset (X, 0, PERIOD * sizeof (float));
@@ -797,7 +332,3 @@ void Audio::proc_mesg (void)
         if (M) M->recover ();
     }
 }
-
-
-const char *Audio::_ports_stereo [2] = { "out.L", "out.R" };
-const char *Audio::_ports_ambis1 [4] = { "out.W", "out.X", "out.Y", "out.Z" };

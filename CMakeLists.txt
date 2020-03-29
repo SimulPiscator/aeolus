@@ -78,6 +78,8 @@ set(AEOLUS_SRC
     source/asection.h
     source/audio.cc
     source/audio.h
+    source/audio_jack.cc
+    source/audio_jack.h
     source/callbacks.h
     source/division.cc
     source/division.h
@@ -108,11 +110,15 @@ if(LINUX)
     list(APPEND AEOLUS_SRC
         source/imidi_alsa.cc
         source/imidi_alsa.h
+	source/audio_alsa.cc
+	source/audio_alsa.h
     )
 elseif(APPLE)
     list(APPEND AEOLUS_SRC
         source/imidi_coremidi.cc
         source/imidi_coremidi.h
+	source/audio_coreaudio.cc
+	source/audio_coreaudio.h
     )
 endif()
 
