@@ -130,7 +130,7 @@ target_link_libraries(aeolus
     ${JACK_LIBRARY}
 )
 if(LINUX)
-  target_link_libraries(aeolus asound pthread dl rt)
+  target_link_libraries(aeolus asound pthread zita-alsa-pcmi dl rt)
 elseif(APPLE)
   find_library(COCOA Cocoa)
   find_library(CORE_MIDI CoreMIDI)

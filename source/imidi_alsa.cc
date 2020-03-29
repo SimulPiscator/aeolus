@@ -19,8 +19,10 @@
 
 
 #include "imidi_alsa.h"
+#include "messages.h"
 
-Imidi_alsa::Imidi_alsa (Lfq_u32 *qnote, Lfq_u8 *qmidi, uint16_t *midimap, const char *appname) : Imidi(midimap, appname),
+Imidi_alsa::Imidi_alsa (Lfq_u32 *qnote, Lfq_u8 *qmidi, uint16_t *midimap, const char *appname) 
+   : Imidi(qnote, qmidi, midimap, appname),
     _handle(NULL)
 {
 }
@@ -102,7 +104,7 @@ void Imidi_alsa::proc_midi (void)
         snd_seq_event_t  *E;
 	    snd_seq_event_input(_handle, &E);
 
-        if(E->type == SND_SEQ_EVENT_USR0)
+        if(E->type == SND_SEQ_EVENT_USR0) {
             // User event, terminates this trhead if we sent it.
             if (E->source.client == _client) return;
         }
