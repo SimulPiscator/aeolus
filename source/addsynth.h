@@ -102,24 +102,24 @@ public:
     char       _mnemonic [8];
     char       _comments [56];
     char       _reserved [8];
-    int32_t    _n0;
-    int32_t    _n1;
-    int32_t    _fn;
-    int32_t    _fd;
-    N_func     _n_vol;
-    N_func     _n_off;
-    N_func     _n_ran;         
-    N_func     _n_ins;
-    N_func     _n_att;
-    N_func     _n_atd;         
-    N_func     _n_dct;
-    N_func     _n_dcd;         
-    HN_func    _h_lev;
-    HN_func    _h_ran;
-    HN_func    _h_att;
-    HN_func    _h_atp;
+    int32_t    _n0;     // first note
+    int32_t    _n1;     // last note
+    int32_t    _fn;     // always 1
+    int32_t    _fd;     // always 1
+    N_func     _n_vol;  // pipe amplitude in dB (?)
+    N_func     _n_off;  // pipe offset in Hz
+    N_func     _n_ran;  // random pipe offset amplitude in Hz
+    N_func     _n_ins;  // instability in cents (?)
+    N_func     _n_att;  // attack duration is s
+    N_func     _n_atd;  // attack detune in cents (?)
+    N_func     _n_dct;  // decay time in s
+    N_func     _n_dcd;  // decay detune in cents (?)
+    HN_func    _h_lev;  // harmonic's amplitude level in dB
+    HN_func    _h_ran;  // harmonic's random amplitude level variation in dB (?)
+    HN_func    _h_att;  // harmonic's attack duration in s
+    HN_func    _h_atp;  // harmonic's attack gain
 
-    char       _pan;
+    char       _pan;    // panning position: 'L', 'C', or 'R'
     int32_t    _del;
 };
 
