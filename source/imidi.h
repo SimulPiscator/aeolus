@@ -28,7 +28,7 @@
 #include "lfqueue.h"
 #include "messages.h"
 #if __linux__
-# include <asound.h>
+# include <alsa/asoundlib.h>
 #else
 enum {
     SND_SEQ_EVENT_NOTEON = 1,
@@ -67,13 +67,13 @@ protected:
 
 protected:
     const char     *_appname;
+    int             _client;
+    int             _ipport;
 
 private:
     Lfq_u32        *_qnote;
     Lfq_u8         *_qmidi; 
     uint16_t       *_midimap;
-    int             _client;
-    int             _ipport;
 };
 
 

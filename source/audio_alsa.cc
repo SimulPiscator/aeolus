@@ -19,6 +19,7 @@
 
 
 #include "audio_alsa.h"
+#include "messages.h"
 
 Audio_alsa::Audio_alsa (const char *name, Lfq_u32 *qnote, Lfq_u32 *qcomm, const char *device, int fsamp, int fsize, int nfrag) :
     Audio(name, qnote, qcomm),

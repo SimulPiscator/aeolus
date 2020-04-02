@@ -29,14 +29,16 @@ class Imidi_alsa : public Imidi
 public:
     Imidi_alsa (Lfq_u32 *qnote, Lfq_u8 *qmidi, uint16_t *midimap, const char *appname);
 
-private:
-    void thr_main (void) override;
-
 protected:
-    void on_open_midi (void) override;
-    void on_close_midi (void) override;
-    void on_terminate() override;
-    
+    virtual void on_open_midi (void);
+    virtual void on_close_midi (void);
+    virtual void on_terminate (void);
+
+private:
+    virtual void thr_main (void);
+    void proc_midi (void);
+
+    int             _opport;
     snd_seq_t      *_handle;
 };
 

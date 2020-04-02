@@ -26,7 +26,7 @@ Imidi::Imidi (Lfq_u32 *qnote, Lfq_u8 *qmidi, uint16_t *midimap, const char *appn
     _qnote(qnote),
     _qmidi(qmidi),
     _midimap (midimap),
-    _client(NULL),
+    _client(0),
     _ipport(0)
 {
 }
