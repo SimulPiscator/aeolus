@@ -110,7 +110,7 @@ public:
     N_func     _n_off;  // pipe offset in Hz
     N_func     _n_ran;  // random pipe offset amplitude in Hz
     N_func     _n_ins;  // instability in cents (?)
-    N_func     _n_att;  // attack duration is s
+    N_func     _n_att;  // attack duration in s
     N_func     _n_atd;  // attack detune in cents (?)
     N_func     _n_dct;  // decay time in s
     N_func     _n_dcd;  // decay detune in cents (?)
@@ -120,7 +120,7 @@ public:
     HN_func    _h_atp;  // harmonic's attack gain
 
     char       _pan;    // panning position: 'L', 'C', or 'R'
-    int32_t    _del;
+    int32_t    _del;    // reverb delay in s
 };
 
 
