@@ -41,9 +41,9 @@ public:
     void reset (float v);
     void setv (int i, float v);
     void clrv (int i);
-    float vs (int i) const { return _v [i]; }
-    int   st (int i) const { return (_b & (1 << i)) ? 1 : 0; }
-    float vi (int n) const
+    float vs (int i) const { return _v [i]; } // value set
+    int   st (int i) const { return (_b & (1 << i)) ? 1 : 0; } // has value been set?
+    float vi (int n) const // value interpolated, index scaled by factor 6
     {
 	int   i = n / 6;
         int   k = n - 6 * i;
@@ -57,8 +57,8 @@ public:
                 
 private:
 
-    int   _b;
-    float _v [N_NOTE];
+    int   _b;          // bitmask indicating values that have been set, bit 4 set if all entries have been set to the same value via clrv()
+    float _v [N_NOTE]; // values at notes 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96
 };
 
 
