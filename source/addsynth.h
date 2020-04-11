@@ -106,18 +106,18 @@ public:
     int32_t    _n1;     // last note
     int32_t    _fn;     // always 1
     int32_t    _fd;     // always 1
-    N_func     _n_vol;  // pipe amplitude in dB (?)
+    N_func     _n_vol;  // pipe amplitude in dB
     N_func     _n_off;  // pipe offset in Hz
     N_func     _n_ran;  // random pipe offset amplitude in Hz
-    N_func     _n_ins;  // instability in cents (?)
+    N_func     _n_ins;  // instability in cents
     N_func     _n_att;  // attack duration in s
-    N_func     _n_atd;  // attack detune in cents (?)
-    N_func     _n_dct;  // decay time in s
-    N_func     _n_dcd;  // decay detune in cents (?)
+    N_func     _n_atd;  // attack detune in cents
+    N_func     _n_dct;  // release time in s
+    N_func     _n_dcd;  // release detune in cents
     HN_func    _h_lev;  // harmonic's amplitude level in dB
     HN_func    _h_ran;  // harmonic's random amplitude level variation in dB (?)
     HN_func    _h_att;  // harmonic's attack duration in s
-    HN_func    _h_atp;  // harmonic's attack gain
+    HN_func    _h_atp;  // harmonic's attack peak in dB (?)
 
     char       _pan;    // panning position: 'L', 'C', or 'R'
     int32_t    _del;    // reverb delay in s

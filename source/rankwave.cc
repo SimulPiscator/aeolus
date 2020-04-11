@@ -190,28 +190,32 @@ void Pipewave::genwave (Addsynth *D, int n, float fsamp, float fpipe)
     int    h, i, k, nc; 
     float  f0, f1, f, m, t, v, v0;
 
-    m = D->_n_att.vi (n);
+    m = D->_n_att.vi (n); // m is maximum attack duration in seconds
     for (h = 0; h < N_HARM; h++)
     {
 	t = D->_h_att.vi (h, n);
         if (t > m) m = t;
     }
-    _l0 = (int)(fsamp * m + 0.5);
-    _l0 = (_l0 + PERIOD - 1) & ~(PERIOD - 1);
+    _l0 = (int)(fsamp * m + 0.5); // _l0 is maximum attack duration in samples
+    _l0 = (_l0 + PERIOD - 1) & ~(PERIOD - 1); // rounded up to an integer number of PERIODs (if PERIOD is a power of 2)
 
-    f1 = (fpipe + D->_n_off.vi (n) + D->_n_ran.vi (n) * (2 * _rgen.urand () - 1)) / fsamp;
-    f0 = f1 * exp2ap (D->_n_atd.vi (n) / 1200.0f);
+    f1 = (fpipe + D->_n_off.vi (n) + D->_n_ran.vi (n) * (2 * _rgen.urand () - 1)) / fsamp; // f1 is effective pipe frequency in terms of sampling rate
+    f0 = f1 * exp2ap (D->_n_atd.vi (n) / 1200.0f); // f0 is detuned pipe frequency during attack
 
     for (h = N_HARM - 1; h >= 0; h--)
     {
         f = (h + 1) * f1;
 	if ((f < 0.45f) && (D->_h_lev.vi (h, n) >= -40.0f)) break;
     }
-    if      (f > 0.250f) _k_s = 3;
-    else if (f > 0.125f) _k_s = 2;
+    // f is frequency of highest relevant harmonics in terms of sampling rate
+    if      (f > 0.250f) _k_s = 3; // choose sample step according to required
+    else if (f > 0.125f) _k_s = 2; // temporal resolution
     else                 _k_s = 1;
-    
+    // _l1 is loop length in samples, computed by an intractable procedure
+    // inside looplen()
+    // nc appears to be the number of cycles in the loop (see below)
     looplen (f1 * fsamp, _k_s * fsamp, (int)(fsamp / 6.0f), &_l1, &nc);
+    // round up _l1 to the nearest multiple of (_k_s * PERIOD)
     if (_l1 < _k_s * PERIOD)
     {
         k = (_k_s * PERIOD - 1) / _l1 + 1;
@@ -219,53 +223,72 @@ void Pipewave::genwave (Addsynth *D, int n, float fsamp, float fpipe)
         nc *= k;
     }
 
+    // k is the number of samples to allocate
     k = _l0 + _l1 + _k_s * (PERIOD + 4);       
 
     delete[] _p0;
     _p0 = new float [k];
-    _p1 = _p0 + _l0;
-    _p2 = _p1 + _l1;
+    _p1 = _p0 + _l0; // begin of loop
+    _p2 = _p1 + _l1; // end of loop
     memset (_p0, 0, k * sizeof (float)); 
 
-    _k_r = (int)(ceilf (D->_n_dct.vi (n) * fsamp / PERIOD) + 1);          
-    _m_r = 1.0f - powf (0.1, 1.0 / _k_r); 
+    // _k_r is release duration in PERIODs
+    _k_r = (int)(ceilf (D->_n_dct.vi (n) * fsamp / PERIOD) + 1);
+    // _m_r is multiplier to apply for each PERIOD
+    _m_r = 1.0f - powf (0.1, 1.0 / _k_r);
+    // _d_r is release detune scaled to _k_s
     _d_r = _k_s * (exp2ap (D->_n_dcd.vi (n) / 1200.0f) - 1.0f);
+    // _d_p is instability
     _d_p = D->_n_ins.vi (n);
 
+    // use _arg as a buffer for time progress
+    // _arg contains time in cycles
     t = 0.0f;
+    // during attack, interpolate between detuned and nominal
+    // frequency such that nominal frequency is reached at the
+    // pipe's attack duration
     k = (int)(fsamp * D->_n_att.vi (n) + 0.5);
     for (i = 0; i <= _l0; i++)
     {
         _arg [i] = t - floorf (t + 0.5);
 	t += (i < k) ? (((k - i) * f0 + i * f1) / k) : f1;
     }         
-     
+    // during loop, just fill _arg with the progressing
+    // cycle number
     for (i = 1; i < _l1; i++)
     {
 	t = _arg [_l0]+ (float) i * nc / _l1;
         _arg [i + _l0] = t - floorf (t + 0.5);
     }         
-
+    // exp2ap(x) is a fast approximation of 2^x
+    // 0.1661 is the factor to convert from dB to powers of 2
+    // so v0 is the gain factor corresponding to the volume dB value of the pipe.
     v0 = exp2ap (0.1661 * D->_n_vol.vi (n));
     for (h = 0; h < N_HARM; h++)
     {
+        // abort when harmonic frequency approaches Nyquist frequency
         if ((h + 1) * f1 > 0.45) break;
+        // here, v is the harmonic's level in dB
         v = D->_h_lev.vi (h, n);          
         if (v < -80.0) continue;
-
-        v = v0 * exp2ap (0.1661 * (v + D->_h_ran.vi (h, n) * (2 * _rgen.urand () - 1)));            
-        k = (int)(fsamp * D->_h_att.vi (h, n) + 0.5); 
+        // here, v is the harmonic's final amplitude after applying random variation
+        v = v0 * exp2ap (0.1661 * (v + D->_h_ran.vi (h, n) * (2 * _rgen.urand () - 1)));
+        // k is the harmonic's attack duration in samples
+        k = (int)(fsamp * D->_h_att.vi (h, n) + 0.5);
+        // attgain() computes the harmonic's attack gain over
+        // the attack period and stores it in the _att array
         attgain (k, D->_h_atp.vi (h, n));            
-
+        // compute the harmonic's contribution to attack and loop samples
         for (i = 0; i < _l0 + _l1; i++) 
         {
 	    t = _arg [i] * (h + 1);   
             t -= floorf (t);
             m = v * sinf (2 * M_PI * t);
-            if (i < k) m *= _att [i];
+            if (i < k) m *= _att [i]; // apply attack gain
             _p0 [i] += m;
         }
     }
+    // fill remaining samples at the end with data from the loop
     for (i = 0; i < _k_s * (PERIOD + 4); i++) _p0 [i + _l0 + _l1] = _p0 [i + _l0];
 }
 

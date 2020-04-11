@@ -20,7 +20,7 @@
 
 #include <math.h>
 
-
+// fast approximation for 2^x
 float exp2ap (float x)
 {
     int i;
