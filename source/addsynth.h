@@ -104,8 +104,8 @@ public:
     char       _reserved [8];
     int32_t    _n0;     // first note
     int32_t    _n1;     // last note
-    int32_t    _fn;     // always 1
-    int32_t    _fd;     // always 1
+    int32_t    _fn;     // frequency multiplier numerator, 1 for 16', 2 for 4'
+    int32_t    _fd;     // frequency multiplier denominator, 2 for 16', 1 for 4'
     N_func     _n_vol;  // pipe amplitude in dB
     N_func     _n_off;  // pipe offset in Hz
     N_func     _n_ran;  // random pipe offset amplitude in Hz
@@ -117,7 +117,7 @@ public:
     HN_func    _h_lev;  // harmonic's amplitude level in dB
     HN_func    _h_ran;  // harmonic's random amplitude level variation in dB (?)
     HN_func    _h_att;  // harmonic's attack duration in s
-    HN_func    _h_atp;  // harmonic's attack peak in dB (?)
+    HN_func    _h_atp;  // harmonic's attack peak in dB
 
     char       _pan;    // panning position: 'L', 'C', or 'R'
     int32_t    _del;    // reverb delay in s

@@ -78,7 +78,7 @@ private:
     static void initstatic (float fsamp);
 
     static   Rngen   _rgen;
-    static   float  *_arg; // time parameter during waveform generation (?)
+    static   float  *_arg; // time parameter during waveform generation
     static   float  *_att; // harmonic's attack gain time series
 };
 
