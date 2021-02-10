@@ -22,7 +22,7 @@ PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib$(SUFFIX)
 
-VERSION = 0.9.7
+VERSION = 0.9.9
 CPPFLAGS += -MMD -MP -DVERSION=\"$(VERSION)\" -DLIBDIR=\"$(LIBDIR)\"
 CXXFLAGS += -O2 -Wall
 CXXFLAGS += -march=native
@@ -46,7 +46,7 @@ $(AEOLUS_O):
 XIFACE_O =	styles.o mainwin.o midiwin.o audiowin.o instrwin.o editwin.o \
 	midimatrix.o multislider.o functionwin.o xiface.o addsynth.o
 aeolus_x11.so:	CPPFLAGS += -D_REENTRANT
-aeolus_x11.so:	CPPFLAGS += $(shell pkgconf --cflags freetype2)
+aeolus_x11.so:	CPPFLAGS += $(shell pkg-config --cflags freetype2)
 aeolus_x11.so:	CXXFLAGS += -shared -fPIC
 aeolus_x11.so:	LDFLAGS += -shared
 aeolus_x11.so:	LDLIBS += -lclthreads -lclxclient -lpthread -lXft -lX11

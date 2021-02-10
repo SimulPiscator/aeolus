@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(aeolus VERSION "0.9.7")
+project(aeolus VERSION "0.9.9")
 add_definitions(-DVERSION=\"${PROJECT_VERSION}\")
 
 if(UNIX AND NOT APPLE)

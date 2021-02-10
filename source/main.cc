@@ -54,7 +54,11 @@ static bool  u_opt = false;
 static bool  A_opt = false;
 static bool  B_opt = false;
 static bool  C_opt = false;
+#ifdef __linux__
 static int   r_val = 48000;
+#elif __APPLE__
+static int   r_val = 44100;
+#endif
 static int   p_val = 1024;
 static int   n_val = 2;
 static const char *N_val = "aeolus";
@@ -97,7 +101,7 @@ static void help (void)
 #endif
 #if __APPLE__
     fprintf (stderr, "  -C                 Use CoreAudio rather than Jack\n");
-    fprintf (stderr, "    -r <rate>          Sample frequency [48000]\n");
+    fprintf (stderr, "    -r <rate>          Sample frequency [44100]\n");
     fprintf (stderr, "    -p <period>        Period size [1024]\n");
 #endif
     exit (1);
@@ -262,18 +266,18 @@ int main (int ac, char *av [])
     ITC_ctrl::connect (iface, TO_MODEL, model, FM_IFACE);    
 
     audio->start ();
-    if (imidi->thr_start (SCHED_FIFO, audio->relpri () - 20, 0x00010000))
+    if (imidi->thr_start (SCHED_FIFO, audio->relpri () - 20, 0))
     {
         fprintf (stderr, "Warning: can't run midi thread in RT mode.\n");
-	imidi->thr_start (SCHED_OTHER, 0, 0x00010000);
+	imidi->thr_start (SCHED_OTHER, 0, 0);
     }
-    if (model->thr_start (SCHED_FIFO, audio->relpri () - 30, 0x00010000))
+    if (model->thr_start (SCHED_FIFO, audio->relpri () - 30, 0))
     {
         fprintf (stderr, "Warning: can't run model thread in RT mode.\n");
-	model->thr_start (SCHED_OTHER, 0, 0x00010000);
+	model->thr_start (SCHED_OTHER, 0, 0);
     }
-    slave->thr_start (SCHED_OTHER, 0, 0x00010000);
-    iface->thr_start (SCHED_OTHER, 0, 0x00020000);
+    slave->thr_start (SCHED_OTHER, 0, 0);
+    iface->thr_start (SCHED_OTHER, 0, 0);
 
     signal (SIGINT, sigint_handler); 
     n = 4;

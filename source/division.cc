@@ -100,7 +100,11 @@ void Division::set_rank (int ind, Rankwave *W, int pan, int del)
     Rankwave *C;
 
     C = _ranks [ind];
-    if (C) { W->_nmask = C->_cmask; delete C; }
+    if (C)
+    {
+        W->_nmask = C->_cmask;
+        delete C;
+    }
     else W->_nmask = 0;
     W->_cmask = 0;
     _ranks [ind] = W;

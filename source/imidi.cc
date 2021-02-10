@@ -66,9 +66,9 @@ void Imidi::proc_midi_event(const MidiEvent &ev)
     m = _midimap [c] & 127;        // Keyboard and hold bits
 //        d = (_midimap [c] >>  8) & 7;  // Division number if (f & 2)
     f = (_midimap [c] >> 12) & 7;  // Control enabled if (f & 4)
-
     t = ev.type;
-	switch (t)
+
+    switch (t)
 	{ 
 	case SND_SEQ_EVENT_NOTEON:
 	case SND_SEQ_EVENT_NOTEOFF:
