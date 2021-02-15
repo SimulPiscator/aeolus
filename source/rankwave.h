@@ -36,7 +36,7 @@ private:
     Pipewave (void) :
         _p0 (0), _p1 (0), _p2 (0), _l1 (0), _k_s (0),  _k_r (0), _m_r (0),
 	_link (0), _sbit (0), _sdel (0), 
-        _p_p (0), _y_p (0), _z_p (0), _p_r (0), _y_r (0), _g_r (0), _i_r (0)
+        _p_p (0), _p_f(0), _y_p (0), _z_p (0), _p_r (0), _y_r (0), _g_r (0), _i_r (0)
     {}     
 
     ~Pipewave (void) { delete[] _p0; }
@@ -66,7 +66,8 @@ private:
     uint32_t   _sbit;  // on state bit  
     uint32_t   _sdel;  // delayed state
     float     *_out;   // audio output buffer
-    float     *_p_p;   // play pointer   
+    float     *_p_p;   // play pointer
+    float      _p_f;   // play pointer fraction
     float      _y_p;   // play interpolation            
     float      _z_p;   // play interpolation speed
     float     *_p_r;   // release pointer

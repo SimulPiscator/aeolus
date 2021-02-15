@@ -439,6 +439,7 @@ void Editwin::handle_callb (int k, X_window *W, XEvent *E )
 
             case B_APPL:
                 strcpy (_edit->_stopname, _name->text ());
+                strcpy (_edit->_comments, _comm->text ());
                 _callb->handle_callb (CB_EDIT_APP, this, 0);
                 break;
 
@@ -475,6 +476,7 @@ void Editwin::handle_callb (int k, X_window *W, XEvent *E )
            break;
 
         case TEXTIP | X_textip::MODIF:
+           _appl->set_stat (1);
            _save->set_stat (1);
            break;
 

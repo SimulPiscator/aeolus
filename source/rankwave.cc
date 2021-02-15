@@ -24,9 +24,11 @@
 #include <string.h>
 #include "rankwave.h"
 
+#ifndef REPETITION_POINTS // sp
+# define REPETITION_POINTS 1
+#endif
 
 extern float exp2ap (float);
-
 
 Rngen   Pipewave::_rgen;
 float  *Pipewave::_arg = 0;
@@ -138,7 +140,7 @@ void Pipewave::play (void)
         }
         else 
 	{
-            y = _y_p;  
+            y = _y_p;
             _z_p += _d_p * 0.0005f * (0.05f * _d_p * (_rgen.urandf () - 0.5f) - _z_p);
             dy = _z_p * _k_s;
             while (k--)
@@ -169,7 +171,7 @@ void Pipewave::play (void)
 
 void Pipewave::genwave (Addsynth *D, int n, float fsamp, float fpipe)
 {
-    int    h, i, k, nc; 
+    int    h, i, k, nc;
     float  f0, f1, f, m, t, v, v0;
 
     m = D->_n_att.vi (n); // m is maximum attack duration in seconds
@@ -399,7 +401,7 @@ void Pipewave::load (FILE *F)
 
 Rankwave::Rankwave (int n0, int n1) : _n0 (n0), _n1 (n1), _list (0), _modif (false)
 {
-    _pipes = new Pipewave [n1 - n0 + 1]; 
+    _pipes = new Pipewave [n1 - n0 + 1];
 }
 
 
@@ -409,15 +411,99 @@ Rankwave::~Rankwave (void)
 }
 
 
+#if REPETITION_POINTS
+namespace
+{
+
+struct RepetitionPoint
+{
+    RepetitionPoint(int note, int num, int den)
+    : note(note), num(num), den(den), next(nullptr) {}
+    ~RepetitionPoint() { delete next; }
+    int note, num, den;
+    RepetitionPoint *next;
+};
+      
+RepetitionPoint *ParseRepetitions(const char* s)
+{
+    char tag = '$';
+    RepetitionPoint *r = 0, *cur = 0;
+    while (*s && *s != tag)
+      ++s;
+    if (*s)
+      ++s;
+    int note = 0, n = 0;
+    char buf[64];
+    while (*s && *s != tag && sscanf(s, "%d:%s%n", &note, buf, &n) > 0)
+    {
+      s += n;
+      int wholes = 0, num = 0, den = 0;
+      if (sscanf(buf, "%d+%d/%d", &wholes, &num, &den) != 3)
+      {
+        wholes = 0;
+        if (sscanf(buf, "%d/%d", &num, &den) != 2)
+        {
+          den = 1;
+          if (sscanf(buf, "%d", &num) != 1)
+          {
+            num = 0;
+            fprintf (stderr, "Expected pitch written as 'a+b/c', got '%s'\n", buf);
+          }
+        }
+      }
+      RepetitionPoint *p = new RepetitionPoint(note, num + wholes * den, den);
+      if (!r)
+      {
+        r = p;
+        cur = p;
+      }
+      else
+      {
+        cur->next = p;
+        cur = p;
+      }
+    }
+    return r;
+}
+
+} // namespace
+    
+#endif // REPETITION_POINTS
+    
+
+
 void Rankwave::gen_waves (Addsynth *D, float fsamp, float fbase, float *scale)
 {
     Pipewave::initstatic (fsamp);
 
+#if REPETITION_POINTS
+    float fn = D->_fn, fd = D->_fd,
+          fbase_adj = fbase * D->_fn / (D->_fd * scale[9]);
+    RepetitionPoint* points = ParseRepetitions( D->_comments ), *p = points;
+    for (int i = _n0; i <= _n1; i++)
+    {
+        if( p && i == p->note )
+        {
+          fbase_adj = 0;
+          D->_fn = p->den * 8;
+          D->_fd = p->num;
+          if( D->_fn > 0 && D->_fd > 0 )
+            fbase_adj = fbase * D->_fn / (D->_fd * scale[9]);
+          p = p->next;
+        }
+        if( fbase_adj > 0 )
+          _pipes [i - _n0].genwave (D, i - _n0, fsamp, ldexpf (fbase_adj * scale [i % 12], i / 12 - 5));
+    }
+    delete points;
+    D->_fn = fn;
+    D->_fd = fd;
+#else
     fbase *=  D->_fn / (D->_fd * scale [9]);
     for (int i = _n0; i <= _n1; i++)
     {
 	_pipes [i - _n0].genwave (D, i - _n0, fsamp, ldexpf (fbase * scale [i % 12], i / 12 - 5));
     }
+#endif // REPETITION_POINTS
     _modif = true;
 }
 
@@ -591,7 +677,7 @@ int Rankwave::load (const char *path, Addsynth *D, float fsamp, float fbase, flo
     }
 
     for (i = _n0, P = _pipes; i <= _n1; i++, P++) P->load (F);
-
+  
     fclose (F);
 
     _modif = false;

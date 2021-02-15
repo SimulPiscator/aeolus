@@ -56,7 +56,13 @@ Keybd::Keybd (void) :
 
 Ifelm::Ifelm (void) :
     _state (0)
+#if MULTISTOP
+    , _action0( _action[0][0] ), _action1( _action[1][0] )
+#endif
 {
+#if MULTISTOP
+    memset(_action, 0, sizeof(_action));
+#endif
     *_label = 0;
     *_mnemo = 0;
 }
@@ -565,8 +571,15 @@ void Model::proc_rank (int g, int i, int comm)
     I = _group [g]._ifelms + i;
     if ((I->_type == Ifelm::DIVRANK) || (I->_type == Ifelm::KBDRANK))
     {
+#if MULTISTOP
+      for( uint32_t* a = I->_action[0]; *a; ++a )
+      {
+        d = (*a >> 16) & 255;
+        r = (*a >>  8) & 255;
+#else
         d = (I->_action0 >> 16) & 255;
         r = (I->_action0 >>  8) & 255;
+#endif
         R = _divis [d]._ranks + r;
         if (comm == MT_SAVE_RANK)
         {
@@ -598,6 +611,9 @@ void Model::proc_rank (int g, int i, int comm)
 	    M->_path  = _waves;
 	    send_event (TO_SLAVE, M);
 	}
+#if MULTISTOP
+      }
+#endif
     }
 }
 
@@ -617,9 +633,20 @@ void Model::set_ifelm (int g, int i, int m)
 	I->_state = s;
         if (_qcomm->write_avail ())
 	{
-	    _qcomm->write (0, s ? I->_action1 : I->_action0);  
+#if MULTISTOP
+            uint32_t* a = s ? I->_action[1] : I->_action[0];
+            while( *a )
+            {
+              _qcomm->write (0, *a);
+              _qcomm->write_commit (1);
+              send_event (TO_IFACE, new M_ifc_ifelm (MT_IFC_ELCLR + s, g, i));
+              ++a;
+            }
+#else
+            _qcomm->write (0, s ? I->_action0 : I->_action0);
             _qcomm->write_commit (1);
-            send_event (TO_IFACE, new M_ifc_ifelm (MT_IFC_ELCLR + s, g, i));         
+            send_event (TO_IFACE, new M_ifc_ifelm (MT_IFC_ELCLR + s, g, i));
+#endif
 	}
     }
 }
@@ -803,6 +830,10 @@ Rank *Model::find_rank (int g, int i)
     I = _group [g]._ifelms + i;
     if ((I->_type == Ifelm::DIVRANK) || (I->_type == Ifelm::KBDRANK))
     {
+#if MULTISTOP
+        if( I->_action[0][1] )
+          return 0;
+#endif
         d = (I->_action0 >> 16) & 255;
         r = (I->_action0 >>  8) & 255;
         return _divis [d]._ranks + r;
@@ -1072,8 +1103,38 @@ int Model::read_instr (void)
                         I->_type = Ifelm::DIVRANK; 
 			k = 128;
 		    }
+#if MULTISTOP
+                    int max_ranks = sizeof(*I->_action) / sizeof(**I->_action) - 1,
+                        i = 0;
+                    bool done = false;
+                    do {
+                      I->_action[0][i] = (6 << 24) | (d << 16) | (r << 8) | k;
+                      I->_action[1][i] = (7 << 24) | (d << 16) | (r << 8) | k;
+                      n = 0;
+                      done = (sscanf(q, "%d%n", &r, &n) <= 0);
+                      q += n;
+                      --r;
+                    } while( !done && ++i < max_ranks );
+                    if( !done )
+                    {
+                        fprintf (stderr, "Line %d: a stop can not control more than %d ranks\n", line, max_ranks);
+                        stat = ERROR;
+                    }
+                    else if( i > 0 )
+                    {
+                      static const char* count[] = { "", "$II", "$III", "$IV", "$V", "$VI", "$VII", "$VIII", "$IX", "$X" };
+                      int max_len = sizeof(I->_label)/sizeof(*I->_label) - 1;
+                      char* p = I->_label;
+                      while( *p && *p != '$' )
+                        ++p;
+                      *p = 0;
+                      if( i < sizeof(count)/sizeof(*count) && strlen(I->_label) + strlen(count[i]) < max_len )
+                        strcat(I->_label, count[i]);
+                    }
+#else
                     I->_action0 = (6 << 24) | (d << 16) | (r << 8) | k;
                     I->_action1 = (7 << 24) | (d << 16) | (r << 8) | k;
+#endif
     		}
 	    }
 	}
@@ -1226,8 +1287,21 @@ int Model::write_instr (void)
 	    case Ifelm::KBDRANK:
                 k = I->_keybd;
                 d = (I->_action0 >> 16) & 255;
+#if MULTISTOP
+                {
+                  uint32_t* a = I->_action[0];
+                  fprintf (F, "/stop         %d   %d  ", k + 1, d + 1);
+                  while( *a )
+                  {
+                    r = (*a++ >> 16) & 255;
+                    fprintf (F, "%2d  ", r + 1);
+                  }
+                  fprintf (F, "\n" );
+                }
+#else
                 r = (I->_action0 >>  8) & 255;
                 fprintf (F, "/stop         %d   %d  %2d\n", k + 1, d + 1, r + 1);
+#endif
 		break;
 
 	    case Ifelm::COUPLER:

@@ -29,6 +29,9 @@
 #include "rankwave.h"
 #include "global.h"
 
+#ifndef MULTISTOP
+# define MULTISTOP 1
+#endif
 
 class Asect
 {
@@ -96,8 +99,14 @@ public:
     int       _type;
     int       _keybd;
     int       _state;
+#if MULTISTOP
+    uint32_t  _action[2][8];
+    uint32_t& _action0;
+    uint32_t& _action1;
+#else
     uint32_t  _action0;
     uint32_t  _action1;
+#endif
 };
 
     
