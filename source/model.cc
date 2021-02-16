@@ -57,7 +57,7 @@ Keybd::Keybd (void) :
 Ifelm::Ifelm (void) :
     _state (0)
 #if MULTISTOP
-    , _action0( _action[0][0] ), _action1( _action[1][0] )
+    , _action0(_action[0][0]), _action1(_action[1][0])
 #endif
 {
 #if MULTISTOP
@@ -635,7 +635,7 @@ void Model::set_ifelm (int g, int i, int m)
 	{
 #if MULTISTOP
             uint32_t* a = s ? I->_action[1] : I->_action[0];
-            while( *a )
+            while (*a)
             {
               _qcomm->write (0, *a);
               _qcomm->write_commit (1);
@@ -831,7 +831,7 @@ Rank *Model::find_rank (int g, int i)
     if ((I->_type == Ifelm::DIVRANK) || (I->_type == Ifelm::KBDRANK))
     {
 #if MULTISTOP
-        if( I->_action[0][1] )
+        if (I->_action[0][1])
           return 0;
 #endif
         d = (I->_action0 >> 16) & 255;
@@ -1114,21 +1114,21 @@ int Model::read_instr (void)
                       done = (sscanf(q, "%d%n", &r, &n) <= 0);
                       q += n;
                       --r;
-                    } while( !done && ++i < max_ranks );
-                    if( !done )
+                    } while (!done && ++i < max_ranks);
+                    if (!done)
                     {
                         fprintf (stderr, "Line %d: a stop can not control more than %d ranks\n", line, max_ranks);
                         stat = ERROR;
                     }
-                    else if( i > 0 )
+                    else if (i > 0)
                     {
                       static const char* count[] = { "", "$II", "$III", "$IV", "$V", "$VI", "$VII", "$VIII", "$IX", "$X" };
                       int max_len = sizeof(I->_label)/sizeof(*I->_label) - 1;
                       char* p = I->_label;
-                      while( *p && *p != '$' )
+                      while (*p && *p != '$')
                         ++p;
                       *p = 0;
-                      if( i < sizeof(count)/sizeof(*count) && strlen(I->_label) + strlen(count[i]) < max_len )
+                      if (i < sizeof(count)/sizeof(*count) && strlen(I->_label) + strlen(count[i]) < max_len)
                         strcat(I->_label, count[i]);
                     }
 #else
@@ -1289,9 +1289,9 @@ int Model::write_instr (void)
                 d = (I->_action0 >> 16) & 255;
 #if MULTISTOP
                 {
-                  uint32_t* a = I->_action[0];
+                  uint32_t *a = I->_action[0];
                   fprintf (F, "/stop         %d   %d  ", k + 1, d + 1);
-                  while( *a )
+                  while (*a)
                   {
                     r = (*a++ >> 16) & 255;
                     fprintf (F, "%2d  ", r + 1);
