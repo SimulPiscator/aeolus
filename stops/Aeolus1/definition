@@ -7,6 +7,7 @@
 
 # Keyboards
 #
+/manual/new   IV
 /manual/new   III
 /manual/new   II
 /manual/new   I
@@ -14,14 +15,14 @@
 
 # Divisions
 #
-/divis/new    IV       0  1
+/divis/new    IV       1  1
 /rank         W   0  I_trumpet.ae0
 /rank         R  27  new_oboe_fa.ae0
 /rank         W  24  cromhorne.ae0
 /swell
 /divis/end
 
-/divis/new    III      1  2
+/divis/new    III      2  2
 /rank         C  17  III_principal_8.ae0
 /rank         W  20  gemshorn8.ae0
 /rank         R  17  quintadena.ae0
@@ -36,7 +37,7 @@
 /tremul       4.0  0.4
 /divis/end
 
-/divis/new    II       2  3
+/divis/new    II       3  3
 /rank         L  23  rohrflute8.ae0
 /rank         C  21  harmflute8.ae0
 /rank         R  19  II_flautodolce4.ae0
@@ -50,7 +51,7 @@
 /tremul       5.0  0.3
 /divis/end
 
-/divis/new    I        3  4
+/divis/new    I        4  4
 /rank         C  10  I_principal_8.ae0
 /rank         R  14  I_principal_4.ae0
 /rank         L  16  I_octave_2.ae0
@@ -63,10 +64,14 @@
 /rank         R   8  flute4.ae0
 /rank         R  10  flute2.ae0
 /rank         C   4  I_cymbel.ae0
-/rank         L  18  I_mixtur5fach.ae0
+/rank         L  18  I_mixtur1.ae0
+/rank         L  18  I_mixtur2.ae0
+/rank         L  18  I_mixtur3.ae0
+/rank         L  18  I_mixtur4.ae0
+/rank         L  18  I_mixtur5.ae0
 /divis/end
 
-/divis/new    P        4  4
+/divis/new    P        5  4
 /rank         C  20  bourdon16.ae0
 /rank         C  28  P_principal_16.ae0
 /rank         R  17  P_principal_8.ae0
@@ -128,7 +133,7 @@
 /stop         0   4  10
 /stop         0   4  11
 /stop         0   4  12
-/stop         0   4  13
+/stop         0   4  13 14 15 16 17
 /stop         3   1   1
 /stop         3   1   2
 /stop         3   1   3

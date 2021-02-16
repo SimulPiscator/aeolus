@@ -14,7 +14,7 @@
 
 # Divisions
 #
-/divis/new    Swell    0  1
+/divis/new    Swell    3  1
 /rank         C  17  III_principal_8.ae0
 /rank         W  20  gemshorn8.ae0
 /rank         R  17  quintadena.ae0
@@ -31,7 +31,7 @@
 /tremul       4.0  0.4
 /divis/end
 
-/divis/new    Choir    0  3
+/divis/new    Choir    1  3
 /rank         L  23  rohrflute8.ae0
 /rank         C  21  harmflute8.ae0
 /rank         R  19  II_flautodolce4.ae0
@@ -46,7 +46,7 @@
 /tremul       5.0  0.3
 /divis/end
 
-/divis/new    Great    0  2
+/divis/new    Great    2  2
 /rank         C  10  I_principal_8.ae0
 /rank         R  14  I_principal_4.ae0
 /rank         L  16  I_octave_2.ae0
@@ -59,7 +59,11 @@
 /rank         R   8  flute4.ae0
 /rank         R  10  flute2.ae0
 /rank         C   4  I_cymbel.ae0
-/rank         L  18  I_mixtur5fach.ae0
+/rank         L  18  I_mixtur1.ae0
+/rank         L  18  I_mixtur2.ae0
+/rank         L  18  I_mixtur3.ae0
+/rank         L  18  I_mixtur4.ae0
+/rank         L  18  I_mixtur5.ae0
 /rank         W   0  I_trumpet.ae0
 /divis/end
 
@@ -118,8 +122,8 @@
 /stop         0   3  10
 /stop         0   3  11
 /stop         0   3  12
-/stop         0   3  13
-/stop         0   3  14
+/stop         0   3  13 14 15 16 17
+/stop         0   3  18
 /group/end
 
 /group/new    Choir  

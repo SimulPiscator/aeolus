@@ -42,6 +42,11 @@
 /rank         R  22  none.ae0
 /rank         W  24  cromhorne.ae0
 /rank         L  18  I_melodia.ae0
+/rank         C  21  II_cornet1.ae0
+/rank         C  21  II_cornet2.ae0
+/rank         C  21  II_cornet3.ae0
+/rank         C  21  II_cornet4.ae0
+/rank         C  21  II_cornet5.ae0
 /swell
 /tremul       5.0  0.3
 /divis/end
@@ -59,7 +64,11 @@
 /rank         R   8  flute4.ae0
 /rank         R  10  flute2.ae0
 /rank         C   4  I_cymbel.ae0
-/rank         L  18  I_mixtur5fach.ae0
+/rank         L  18  mixtur1.ae0
+/rank         L  18  mixtur2.ae0
+/rank         L  18  mixtur3.ae0
+/rank         L  18  mixtur4.ae0
+/rank         L  18  mixtur5.ae0
 /rank         W   0  I_trumpet.ae0
 /divis/end
 
@@ -72,7 +81,11 @@
 /rank         R  15  P_octave_1.ae0
 /rank         L  22  P_quinte_513.ae0
 /rank         R  26  P_quinte_223.ae0
-/rank         C  18  P_mixtur5fach.ae0
+/rank         C  18  mixtur1.ae0
+/rank         C  18  mixtur2.ae0
+/rank         C  18  mixtur3.ae0
+/rank         C  18  mixtur4.ae0
+/rank         C  18  mixtur5.ae0
 /rank         C  30  bassoon.ae0
 /rank         W  10  trombone.ae0
 /rank         W  15  bombarde.ae0
@@ -108,6 +121,7 @@
 /stop         0   2   9
 /stop         0   2  10
 /stop         0   2  11
+/stop         0   2  12 13 14 15 16
 /tremul       2       TR       Tremulant
 /coupler      2   1   C2+3     II+III
 /group/end
@@ -125,8 +139,8 @@
 /stop         0   3  10
 /stop         0   3  11
 /stop         0   3  12
-/stop         0   3  13
-/stop         0   3  14
+/stop         0   3  13 14 15 16 17
+/stop         0   3  18
 /coupler      3   2   C1+2     I+II
 /coupler      3   1   C1+3     I+III
 /group/end
@@ -140,11 +154,11 @@
 /stop         0   4   6
 /stop         0   4   7
 /stop         0   4   8
-/stop         0   4   9
-/stop         0   4  10
-/stop         0   4  11
-/stop         0   4  12
-/stop         0   4  13
+/stop         0   4   9 10 11 12 13
+/stop         0   4  14
+/stop         0   4  15
+/stop         0   4  16
+/stop         0   4  17
 /coupler      4   3   CP+1     P+I
 /coupler      4   2   CP+2     P+II
 /coupler      4   1   CP+3     P+III
