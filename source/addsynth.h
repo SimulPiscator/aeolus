@@ -119,7 +119,7 @@ public:
     HN_func    _h_att;  // harmonic's attack duration in s
     HN_func    _h_atp;  // harmonic's attack peak in dB
 
-    char       _pan;    // panning position: 'L', 'C', or 'R'
+    char       _pan;    // panning position: 'L', 'C', 'R', or 'W'
     int32_t    _del;    // reverb delay in ms
 };
 
