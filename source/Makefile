@@ -33,7 +33,7 @@ all:	aeolus aeolus_x11.so aeolus_txt.so
 
 AEOLUS_O =	main.o audio.o model.o slave.o imidi.o addsynth.o scales.o \
 		reverb.o asection.o division.o rankwave.o rngen.o exp2ap.o lfqueue.o \
-		audio_alsa.o audio_jack.o
+		audio_alsa.o audio_jack.o imidi_alsa.o
 aeolus:	LDLIBS += -lzita-alsa-pcmi -lclthreads -ljack -lasound -lpthread -ldl -lrt
 aeolus: LDFLAGS += -L$(LIBDIR)
 aeolus:	$(AEOLUS_O)
