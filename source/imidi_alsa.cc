@@ -124,5 +124,7 @@ void Imidi_alsa::proc_midi (void)
                 ev.control.value = E->data.control.value;
                 break;
         }
+
+        proc_midi_event(ev);
     }
 }
