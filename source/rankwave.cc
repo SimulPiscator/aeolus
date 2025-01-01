@@ -368,7 +368,8 @@ void Pipewave::save (FILE *F)
     d.i32 [7] = 0;
     fwrite (&d, 1, 32, F);
     k = _l0 +_l1 + _k_s * (PERIOD + 4);
-    fwrite (_p0, k, sizeof (float), F);   
+    if (k > 0)
+      fwrite (_p0, k, sizeof (float), F);
 }
 
 
@@ -390,10 +391,14 @@ void Pipewave::load (FILE *F)
     _m_r = d.flt [3];
     k = _l0 +_l1 + _k_s * (PERIOD + 4);
     delete[] _p0;
-    _p0 = new float [k];
-    _p1 = _p0 + _l0;
-    _p2 = _p1 + _l1;
-    fread (_p0, k, sizeof (float), F);   
+    _p0 = nullptr;
+    if (k > 0)
+    {
+      _p0 = new float [k];
+      _p1 = _p0 + _l0;
+      _p2 = _p1 + _l1;
+      fread (_p0, k, sizeof (float), F);
+    }
 }
 
 
