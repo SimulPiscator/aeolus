@@ -669,8 +669,16 @@ void Model::clr_group (int g)
 	    I->_state = 0;
             if (_qcomm->write_avail ())
 	    {
-	       _qcomm->write (0, I->_action0);  
-               _qcomm->write_commit (1);
+#if MULTISTOP
+                for (const uint32_t* a = I->_action[0]; *a; ++a)
+                {
+                    _qcomm->write (0, *a);
+                    _qcomm->write_commit (1);
+                }
+#else
+                _qcomm->write (0, I->_action0);
+                _qcomm->write_commit (1);
+#endif
 	    }
 	}
     }
