@@ -643,7 +643,7 @@ void Model::set_ifelm (int g, int i, int m)
               ++a;
             }
 #else
-            _qcomm->write (0, s ? I->_action0 : I->_action0);
+            _qcomm->write (0, s ? I->_action1 : I->_action0);
             _qcomm->write_commit (1);
             send_event (TO_IFACE, new M_ifc_ifelm (MT_IFC_ELCLR + s, g, i));
 #endif
