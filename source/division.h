@@ -26,8 +26,12 @@
 #include "rankwave.h"
 
 
+class Audio_offline;
+
 class Division
 {
+    friend class Audio;
+    friend class Audio_offline;
 public:
 
     Division (Asection *asect, float fsam);

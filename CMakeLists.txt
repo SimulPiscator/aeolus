@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(aeolus VERSION "0.9.9")
 add_definitions(-DVERSION=\"${PROJECT_VERSION}\")
@@ -138,3 +138,31 @@ elseif(APPLE)
   target_link_libraries(aeolus ${COCOA} ${CORE_MIDI} ${AUDIO_TOOLBOX})
 endif()
 install(TARGETS aeolus DESTINATION ${BINDIR})
+
+set(AEOLUS_OFFLINE_SRC
+    source/aeolus_offline.cc
+    source/addsynth.cc
+    source/asection.cc
+    source/audio.cc
+    source/division.cc
+    source/exp2ap.cc
+    source/imidi.cc
+    source/lfqueue.cc
+    source/model.cc
+    source/rankwave.cc
+    source/reverb.cc
+    source/rngen.cc
+    source/scales.cc
+    source/slave.cc
+)
+
+add_executable(aeolus_offline
+    ${AEOLUS_OFFLINE_SRC}
+)
+target_link_libraries(aeolus_offline
+    ${CLTHREADS_LIBRARY}
+    pthread
+    rt
+    dl
+)
+install(TARGETS aeolus_offline DESTINATION ${BINDIR})
