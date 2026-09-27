@@ -214,9 +214,18 @@ int main (int ac, char *av [])
 
     if (mlockall (MCL_CURRENT | MCL_FUTURE)) fprintf (stderr, "Warning: memory lock failed.\n");
 
-    if (t_opt) sprintf (s, "%s/aeolus_txt.so", LIBDIR);
-    else       sprintf (s, "%s/aeolus_x11.so", LIBDIR);
+    const char *env_libdir = getenv ("AEOLUS_LIBDIR");
+    const char *libdir = env_libdir ? env_libdir : LIBDIR;
+    if (t_opt) sprintf (s, "%s/aeolus_txt.so", libdir);
+    else       sprintf (s, "%s/aeolus_x11.so", libdir);
     so_handle = dlopen (s, RTLD_NOW);
+    if (! so_handle)
+    {
+        // Fallback: check local directory
+        if (t_opt) strcpy (s, "./aeolus_txt.so");
+        else       strcpy (s, "./aeolus_x11.so");
+        so_handle = dlopen (s, RTLD_NOW);
+    }
     if (! so_handle)
     {
         fprintf (stderr, "Error: can't open user interface plugin: %s.\n", dlerror ());
